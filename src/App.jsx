@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BookOpen, MessageCircle, Building2, ClipboardList, CheckSquare, Calendar, User } from 'lucide-react';
 import Navbar from './components/Navbar';
 import NotesSection from './components/NotesSection';
@@ -11,8 +11,8 @@ import CalendarSection from './components/CalendarSection';
 import AdminDashboard from './components/AdminDashboard';
 
 function App() {
-  const [activeTab, setActiveTab] = React.useState('notes');
-  const [userType, setUserType] = React.useState('student'); // ✅ Fix applied
+  const [activeTab, setActiveTab] = useState('notes');
+  const [userType, setUserType] = useState('student'); // ✅ Fix applied
 
   return (
     <div className="min-h-screen bg-gray-50">
