@@ -1,85 +1,84 @@
-const Teacher = require('../models/Teacher');
-const Notes = require('../models/Notes');
+const cloudinary = require('../config/cloudinary');
+const Note = require('../models/Note');
 const Assignment = require('../models/Assignment');
 const Chat = require('../models/Chat');
-const cloudinary = require('../config/cloudinary');
+const Teacher = require('../models/Teacher');
+const Student = require('../models/Student');
 
 /**
- * 📌 Upload Notes (Stored in Cloudinary)
+ * 📌 Upload Notes (Teacher uploads notes)
  */
 exports.uploadNotes = async (req, res) => {
     try {
         if (!req.file) {
-            return res.status(400).json({ error: "No file uploaded" });
+            return res.status(400).json({ message: 'No file uploaded' });
         }
 
-        // Upload file to Cloudinary
-        const result = await cloudinary.uploader.upload(req.file.path);
+        const { path, originalname } = req.file;
 
-        const note = new Notes({
-            teacherId: req.user.id,
-            fileUrl: result.secure_url,
-            fileName: req.file.originalname
+        const note = new Note({
+            teacher: req.user.id,
+            fileUrl: path,
+            fileName: originalname,
         });
 
         await note.save();
-        res.json({ message: "Notes uploaded successfully!", note });
+        res.status(201).json({ message: 'Notes uploaded successfully', note });
     } catch (error) {
-        res.status(500).json({ error: "Failed to upload notes" });
+        res.status(500).json({ message: 'Server Error', error });
     }
 };
 
 /**
- * 📌 Get Uploaded Notes by Teacher
+ * 📌 Get Uploaded Notes (Teacher views uploaded notes)
  */
 exports.getUploadedNotes = async (req, res) => {
     try {
-        const notes = await Notes.find({ teacherId: req.user.id });
-        res.json(notes);
+        const notes = await Note.find({ teacher: req.user.id });
+        res.status(200).json(notes);
     } catch (error) {
-        res.status(500).json({ error: "Failed to fetch notes" });
+        res.status(500).json({ message: 'Server Error', error });
     }
 };
 
 /**
- * 📌 Upload Assignment (Stored in Cloudinary)
+ * 📌 Upload Assignment (Teacher uploads assignments)
  */
 exports.uploadAssignment = async (req, res) => {
     try {
         if (!req.file) {
-            return res.status(400).json({ error: "No file uploaded" });
+            return res.status(400).json({ message: 'No file uploaded' });
         }
 
-        // Upload file to Cloudinary
-        const result = await cloudinary.uploader.upload(req.file.path);
+        const { path, originalname } = req.file;
 
         const assignment = new Assignment({
-            teacherId: req.user.id,
-            fileUrl: result.secure_url,
-            fileName: req.file.originalname
+            teacher: req.user.id,
+            fileUrl: path,
+            fileName: originalname,
         });
 
         await assignment.save();
-        res.json({ message: "Assignment uploaded successfully!", assignment });
+        res.status(201).json({ message: 'Assignment uploaded successfully', assignment });
     } catch (error) {
-        res.status(500).json({ error: "Failed to upload assignment" });
+        res.status(500).json({ message: 'Server Error', error });
     }
 };
 
 /**
- * 📌 Get All Uploaded Assignments
+ * 📌 Get Assignments (Teacher views uploaded assignments)
  */
 exports.getAssignments = async (req, res) => {
     try {
-        const assignments = await Assignment.find({ teacherId: req.user.id });
-        res.json(assignments);
+        const assignments = await Assignment.find({ teacher: req.user.id });
+        res.status(200).json(assignments);
     } catch (error) {
-        res.status(500).json({ error: "Failed to fetch assignments" });
+        res.status(500).json({ message: 'Server Error', error });
     }
 };
 
 /**
- * 📌 Fetch Chat Messages between Teacher & Student
+ * 📌 Get Chat Messages (Between Teacher & Student)
  */
 exports.getChatMessages = async (req, res) => {
     try {
@@ -89,51 +88,50 @@ exports.getChatMessages = async (req, res) => {
                 { sender: req.user.id, receiver: studentId },
                 { sender: studentId, receiver: req.user.id }
             ]
-        }).sort('timestamp');
+        }).sort({ createdAt: 1 });
 
-        res.json(messages);
+        res.status(200).json(messages);
     } catch (error) {
-        res.status(500).json({ error: "Failed to fetch chat messages" });
+        res.status(500).json({ message: 'Server Error', error });
     }
 };
 
 /**
- * 📌 Send Message to Student (Using Socket.io)
+ * 📌 Send Message (Between Teacher & Student)
  */
 exports.sendMessage = async (req, res) => {
     try {
         const { studentId } = req.params;
         const { message } = req.body;
 
-        const chatMessage = new Chat({
+        if (!message) {
+            return res.status(400).json({ message: 'Message content required' });
+        }
+
+        const newMessage = new Chat({
             sender: req.user.id,
             receiver: studentId,
             message,
-            timestamp: new Date()
         });
 
-        await chatMessage.save();
-
-        // Emit the message via Socket.io
-        req.io.to(studentId).emit("newMessage", chatMessage);
-
-        res.json({ message: "Message sent successfully!" });
+        await newMessage.save();
+        res.status(201).json({ message: 'Message sent successfully', newMessage });
     } catch (error) {
-        res.status(500).json({ error: "Failed to send message" });
+        res.status(500).json({ message: 'Server Error', error });
     }
 };
 
 /**
- * 📌 View Teacher Profile (Read-Only)
+ * 📌 Get Teacher Profile (Read-Only)
  */
 exports.getTeacherProfile = async (req, res) => {
     try {
         const teacher = await Teacher.findById(req.user.id).select('-password');
         if (!teacher) {
-            return res.status(404).json({ error: "Teacher not found" });
+            return res.status(404).json({ message: 'Teacher not found' });
         }
-        res.json(teacher);
+        res.status(200).json(teacher);
     } catch (error) {
-        res.status(500).json({ error: "Failed to fetch profile" });
+        res.status(500).json({ message: 'Server Error', error });
     }
 };

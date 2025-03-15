@@ -3,7 +3,7 @@ const Assignment = require('../models/Assignment');
 const Placement = require('../models/Placement');
 const Chat = require('../models/Chat');
 const Notice = require('../models/Notice');
-const Attendance = require('../models/Attendance');
+// const Attendance = require('../models/Attendance');
 
 /**
  * 📌 Download Notes (Only students can download)
@@ -43,8 +43,6 @@ exports.submitAssignment = async (req, res) => {
 /**
  * 📌 Apply for Placement
  */
-
-const Placement = require('../models/Placement');
 
 /**
  * 📌 Get All Placement Opportunities
@@ -156,11 +154,11 @@ exports.getStudentProfile = async (req, res) => {
 /**
  * 📌 View Attendance (Read-Only)
  */
-exports.getAttendance = async (req, res) => {
-    try {
-        const attendance = await Attendance.find({ studentId: req.user.id });
-        res.json(attendance);
-    } catch (error) {
-        res.status(500).json({ error: "Failed to fetch attendance" });
-    }
-};
+// exports.getAttendance = async (req, res) => {
+//     try {
+//         const attendance = await Attendance.find({ studentId: req.user.id });
+//         res.json(attendance);
+//     } catch (error) {
+//         res.status(500).json({ error: "Failed to fetch attendance" });
+//     }
+// };

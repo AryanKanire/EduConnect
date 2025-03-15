@@ -10,7 +10,7 @@ const {
     sendMessage,
     getNotices,
     getStudentProfile,
-    getAttendance
+    // getAttendance
 } = require('../controllers/studentController');
 
 const router = express.Router();
@@ -50,6 +50,6 @@ router.get('/profile', authenticateUser, authorizeStudent, getStudentProfile);
 /**
  * 📌 Attendance (View Only)
  */
-router.get('/attendance', authenticateUser, authorizeStudent, getAttendance);
+// router.get('/attendance', authenticateUser, authorizeStudent, getAttendance);
 
 module.exports = router;

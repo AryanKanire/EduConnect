@@ -1,5 +1,6 @@
 const express = require('express');
 const { authenticateUser, authorizeTeacher } = require('../middlewares/authMiddleware');
+const { cloudinaryUpload } = require('../middlewares/uploadMiddleware'); // Corrected file upload middleware
 
 const {
     uploadNotes,
@@ -11,21 +12,19 @@ const {
     getTeacherProfile
 } = require('../controllers/teacherController');
 
-const uploadMiddleware = require('../middlewares/uploadMiddleware'); // Middleware for file uploads
-
 const router = express.Router();
 
 /**
- * 📌 Notes Section (Upload Notes)
+ * 📌 Notes Section (Upload & View Notes)
  */
-router.post('/notes/upload', authenticateUser, authorizeTeacher, uploadMiddleware, uploadNotes);
-router.get('/notes', authenticateUser, authorizeTeacher, getUploadedNotes); // Get all uploaded notes by the teacher
+router.post('/notes/upload', authenticateUser, authorizeTeacher, cloudinaryUpload.single('file'), uploadNotes);
+router.get('/notes', authenticateUser, authorizeTeacher, getUploadedNotes);
 
 /**
  * 📌 Assignment Section (Upload & View Assignments)
  */
-router.post('/assignments/upload', authenticateUser, authorizeTeacher, uploadMiddleware, uploadAssignment);
-router.get('/assignments', authenticateUser, authorizeTeacher, getAssignments); // Get all uploaded assignments
+router.post('/assignments/upload', authenticateUser, authorizeTeacher, cloudinaryUpload.single('file'), uploadAssignment);
+router.get('/assignments', authenticateUser, authorizeTeacher, getAssignments);
 
 /**
  * 📌 Chat Section (Teacher ↔ Student Chat using Socket.io)
