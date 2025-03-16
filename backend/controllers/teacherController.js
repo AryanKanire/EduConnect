@@ -14,20 +14,34 @@ exports.uploadNotes = async (req, res) => {
             return res.status(400).json({ message: 'No file uploaded' });
         }
 
+        const { title, description, year, subject } = req.body;
+
+        // Ensure required fields are provided
+        if (!year || !subject || !title) {
+            return res.status(400).json({ message: "Year, Subject, and Title are required" });
+        }
+
         const { path, originalname } = req.file;
 
         const note = new Note({
-            teacher: req.user.id,
-            fileUrl: path,
+            teacher: req.user.id, // Ensure authentication middleware is used
+            title,
+            description,
+            fileUrl: path,  // Cloudinary file URL
             fileName: originalname,
+            year,
+            subject
         });
 
         await note.save();
-        res.status(201).json({ message: 'Notes uploaded successfully', note });
+        res.status(201).json({ success: true, message: 'Notes uploaded successfully', note });
+
     } catch (error) {
-        res.status(500).json({ message: 'Server Error', error });
+        console.error("Error in uploadNotes:", error);
+        res.status(500).json({ success: false, message: 'Server Error', error: error.message });
     }
 };
+
 
 /**
  * 📌 Get Uploaded Notes (Teacher views uploaded notes)

@@ -9,6 +9,8 @@ const studentSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     phone: { type: String, required: true },
     currentSubjects: [String],
+    password: { type: String, required: true }, // 🔹 Added password field
 });
+
 
 module.exports = mongoose.model('Student', studentSchema);

@@ -71,7 +71,7 @@ exports.adminLogin = async (req, res) => {
  */
 exports.addStudent = async (req, res) => {
     try {
-        const { rollNumber, name, semester, branch, CGPA, email, phone, currentSubjects } = req.body;
+        const { rollNumber, name, semester, branch, CGPA, email, phone, currentSubjects, password } = req.body;
 
         // Check if student already exists
         const existingStudent = await Student.findOne({ rollNumber });
@@ -79,8 +79,22 @@ exports.addStudent = async (req, res) => {
             return res.status(400).json({ success: false, message: "Student with this roll number already exists!" });
         }
 
+        // Hash password before saving
+        const hashedPassword = await bcrypt.hash(password, 10);
+
         // Create a new student
-        const student = new Student({ rollNumber, name, semester, branch, CGPA, email, phone, currentSubjects });
+        const student = new Student({ 
+            rollNumber, 
+            name, 
+            semester, 
+            branch, 
+            CGPA, 
+            email, 
+            phone, 
+            currentSubjects, 
+            password: hashedPassword // 🔹 Save hashed password
+        });
+
         await student.save();
 
         res.status(201).json({ success: true, message: "Student added successfully!", student });
@@ -96,8 +110,20 @@ exports.addStudent = async (req, res) => {
  */
 exports.addStudentBulk = async (req, res) => {
     try {
+        // Parse students from Excel file
         const students = await parseExcelFile(req.file.buffer);
-        await Student.insertMany(students);
+
+        // Hash passwords before inserting
+        const studentsWithHashedPasswords = await Promise.all(
+            students.map(async (student) => {
+                const hashedPassword = await bcrypt.hash(student.password, 10);
+                return { ...student, password: hashedPassword };
+            })
+        );
+
+        // Insert students into database
+        await Student.insertMany(studentsWithHashedPasswords);
+
         res.json({ success: true, message: "Students added successfully!" });
     } catch (error) {
         res.status(500).json({ success: false, message: "Failed to add students", error: error.message });
