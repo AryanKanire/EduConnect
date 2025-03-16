@@ -10,30 +10,30 @@ const bcrypt = require('bcryptjs');
 /**
  * 📌 Admin Signup (One-time use)
  */
-exports.adminSignup = async (req, res) => {
-    try {
-        const { name, email, password } = req.body;
+// exports.adminSignup = async (req, res) => {
+//     try {
+//         const { name, email, password } = req.body;
 
-        // Check if an admin already exists
-        const existingAdmin = await Admin.findOne();
-        if (existingAdmin) {
-            return res.status(403).json({ success: false, message: "Admin account already exists!" });
-        }
+//         // Check if an admin already exists
+//         const existingAdmin = await Admin.findOne();
+//         if (existingAdmin) {
+//             return res.status(403).json({ success: false, message: "Admin account already exists!" });
+//         }
 
-        // Hash the password before saving
-        const hashedPassword = await bcrypt.hash(password, 10);
+//         // Hash the password before saving
+//         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Create new admin
-        const admin = new Admin({ name, email, password: hashedPassword });
-        await admin.save();
+//         // Create new admin
+//         const admin = new Admin({ name, email, password: hashedPassword });
+//         await admin.save();
 
-        res.status(201).json({ success: true, message: "Admin account created successfully!" });
+//         res.status(201).json({ success: true, message: "Admin account created successfully!" });
 
-    } catch (error) {
-        console.error("Error in adminSignup:", error);
-        res.status(500).json({ success: false, message: "Server error" });
-    }
-};
+//     } catch (error) {
+//         console.error("Error in adminSignup:", error);
+//         res.status(500).json({ success: false, message: "Server error" });
+//     }
+// };
 
 /**
  * 📌 Admin Login
@@ -216,19 +216,52 @@ exports.getAllTeachers = async (req, res) => {
     }
 };
 
+exports.addPlacement = async (req, res) => {
+    try {
+        const { companyName, package, requirements, dateOfVisit, applyLink } = req.body;
+
+        // Validate the Google Form link format
+        if (!applyLink.startsWith("https://")) {
+            return res.status(400).json({ success: false, message: "Invalid apply link. It must be a valid URL." });
+        }
+
+        // Create new placement entry
+        const placement = new Placement({ companyName, package, requirements, dateOfVisit, applyLink });
+
+        await placement.save();
+
+        res.status(201).json({ success: true, message: "Placement added successfully!", placement });
+
+    } catch (error) {
+        console.error("Error in addPlacement:", error);
+        res.status(500).json({ success: false, message: "Failed to add placement", error: error.message });
+    }
+};
+
+
 /**
  * 📌 Add or Update Placement Info
  */
 exports.updatePlacement = async (req, res) => {
     try {
-        const { companyName, package, requirements, visitDate } = req.body;
-        const placement = new Placement({ companyName, package, requirements, visitDate });
-        await placement.save();
+        const { id } = req.params; // Get placement ID from URL
+        const updateData = req.body; // Get updated data from request body
+
+        // Find the placement and update it
+        const placement = await Placement.findByIdAndUpdate(id, updateData, { new: true });
+
+        if (!placement) {
+            return res.status(404).json({ success: false, message: "Placement not found!" });
+        }
+
         res.json({ success: true, message: "Placement updated successfully!", placement });
+
     } catch (error) {
+        console.error("Error in updatePlacement:", error);
         res.status(500).json({ success: false, message: "Failed to update placement", error: error.message });
     }
 };
+
 
 /**
  * 📌 Delete Placement

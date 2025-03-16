@@ -17,6 +17,10 @@ const PlacementSchema = new mongoose.Schema({
         type: Date,
         required: true
     },
+    applyLink: {
+        type: String, // Google Form link for application
+        required: true
+    },
     appliedStudents: [
         {
             studentId: {
