@@ -10,10 +10,13 @@ const {
     sendMessage,
     getNotices,
     getStudentProfile,
+    loginStudent,
     // getAttendance
 } = require('../controllers/studentController');
 
 const router = express.Router();
+
+router.post('/login', loginStudent);
 
 /**
  * 📌 Notes Section (Download Notes)

@@ -131,43 +131,66 @@ exports.getAssignments = async (req, res) => {
 exports.getChatMessages = async (req, res) => {
     try {
         const { studentId } = req.params;
+
         const messages = await Chat.find({
             $or: [
-                { sender: req.user.id, receiver: studentId },
-                { sender: studentId, receiver: req.user.id }
+                { sender: req.user.id, senderModel: "Teacher", receiver: studentId, receiverModel: "Student" },
+                { sender: studentId, senderModel: "Student", receiver: req.user.id, receiverModel: "Teacher" }
             ]
         }).sort({ createdAt: 1 });
 
         res.status(200).json(messages);
     } catch (error) {
-        res.status(500).json({ message: 'Server Error', error });
+        res.status(500).json({ message: "Server Error", error });
     }
 };
+
 
 /**
  * 📌 Send Message (Between Teacher & Student)
  */
+
 exports.sendMessage = async (req, res) => {
     try {
         const { studentId } = req.params;
         const { message } = req.body;
 
         if (!message) {
-            return res.status(400).json({ message: 'Message content required' });
+            return res.status(400).json({ message: "Message content required" });
         }
 
+        const senderRole = "Teacher"; // "Teacher" or "Student"
+        const senderId = req.user.id;
+        const receiverRole = senderRole === "Teacher" ? "Student" : "Teacher";
+
+        // ✅ Store the message in MongoDB (ONLY HERE FOR API)
         const newMessage = new Chat({
-            sender: req.user.id,
+            sender: senderId,
+            senderModel: senderRole,
             receiver: studentId,
-            message,
+            receiverModel: receiverRole,
+            message
         });
 
         await newMessage.save();
-        res.status(201).json({ message: 'Message sent successfully', newMessage });
+
+        // ✅ Emit the message via Socket.io (ONLY for real-time users)
+        if (req.io) {
+            const receiverSocket = req.io.userSocketMap.get(studentId);
+            if (receiverSocket) {
+                req.io.to(receiverSocket).emit("newMessage", newMessage);
+            }
+        }
+
+        res.status(201).json({ message: "Message sent successfully", newMessage });
+
     } catch (error) {
-        res.status(500).json({ message: 'Server Error', error });
+        res.status(500).json({ message: "Server Error", error: error.message });
     }
 };
+
+
+
 
 /**
  * 📌 Get Teacher Profile (Read-Only)

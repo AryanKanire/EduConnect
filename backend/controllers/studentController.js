@@ -3,7 +3,37 @@ const Assignment = require('../models/Assignment');
 const Placement = require('../models/Placement');
 const Chat = require('../models/Chat');
 const Notice = require('../models/Notice');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 // const Attendance = require('../models/Attendance');
+
+exports.loginStudent = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        // Check if student exists
+        const student = await Student.findOne({ email });
+        if (!student) {
+            return res.status(404).json({ error: "Student not found" });
+        }
+
+        // Compare entered password with stored hash
+        const isMatch = await bcrypt.compare(password, student.password);
+        if (!isMatch) {
+            return res.status(401).json({ error: "Invalid credentials" });
+        }
+
+        // Generate JWT token
+        const token = jwt.sign({ id: student._id, role: "Student" }, process.env.JWT_SECRET, {
+            expiresIn: "7d"
+        });
+
+        res.json({ message: "Login successful", token, student });
+
+    } catch (error) {
+        res.status(500).json({ error: "Failed to log in", details: error.message });
+    }
+};
 
 /**
  * 📌 Download Notes (Only students can download)
@@ -80,21 +110,22 @@ exports.applyForPlacement = async (req, res) => {
 };
 
 /**
- * 📌 Fetch Chat Messages between Student & Teacher
+ * 📌 Get Chat Messages (Between Student & Teacher)
  */
 exports.getChatMessages = async (req, res) => {
     try {
         const { teacherId } = req.params;
+
         const messages = await Chat.find({
             $or: [
                 { sender: req.user.id, receiver: teacherId },
                 { sender: teacherId, receiver: req.user.id }
             ]
-        }).sort('timestamp');
+        }).sort({ createdAt: 1 });
 
-        res.json(messages);
+        res.status(200).json(messages);
     } catch (error) {
-        res.status(500).json({ error: "Failed to fetch chat messages" });
+        res.status(500).json({ error: "Failed to fetch chat messages", details: error.message });
     }
 };
 
@@ -106,23 +137,41 @@ exports.sendMessage = async (req, res) => {
         const { teacherId } = req.params;
         const { message } = req.body;
 
-        const chatMessage = new Chat({
-            sender: req.user.id,
+        if (!message) {
+            return res.status(400).json({ error: "Message content is required" });
+        }
+
+        const senderId = req.user.id;
+        const senderRole = "Student";  // Student is the sender
+        const receiverRole = "Teacher";  // Teacher is the receiver
+
+        // ✅ Save the message in MongoDB (Only needed for API requests)
+        const newMessage = new Chat({
+            sender: senderId,
+            senderModel: senderRole,
             receiver: teacherId,
-            message,
-            timestamp: new Date()
+            receiverModel: receiverRole,
+            message
         });
 
-        await chatMessage.save();
+        await newMessage.save();
 
-        // Emit the message via Socket.io
-        req.io.to(teacherId).emit("newMessage", chatMessage);
+        // ✅ Emit message via Socket.io (if teacher is online)
 
-        res.json({ message: "Message sent successfully!" });
+        if (req.io) {
+            const receiverSocket = req.io.userSocketMap.get(teacherId);
+            if (receiverSocket) {
+                req.io.to(receiverSocket).emit("newMessage", newMessage);
+            }
+        }
+
+        res.status(201).json({ message: "Message sent successfully", newMessage });
+
     } catch (error) {
-        res.status(500).json({ error: "Failed to send message" });
+        res.status(500).json({ error: "Failed to send message", details: error.message });
     }
 };
+
 
 /**
  * 📌 Get Notices from Admin

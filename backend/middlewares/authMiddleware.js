@@ -38,7 +38,7 @@ const authorizeTeacher = (req, res, next) => {
 
 // Middleware to authorize Student only
 const authorizeStudent = (req, res, next) => {
-    if (req.user.role !== 'student') {
+    if (req.user.role.toLowerCase() !== 'student') {
         return res.status(403).json({ error: 'Access denied. Students only.' });
     }
     next();
