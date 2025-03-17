@@ -9,10 +9,13 @@ const {
     getAssignments,
     getChatMessages,
     sendMessage,
-    getTeacherProfile
+    getTeacherProfile,
+    teacherLogin
 } = require('../controllers/teacherController');
 
 const router = express.Router();
+
+router.post('/login', teacherLogin);
 
 /**
  * 📌 Notes Section (Upload & View Notes)

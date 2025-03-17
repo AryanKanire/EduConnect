@@ -133,7 +133,12 @@ exports.addStudentBulk = async (req, res) => {
 exports.updateStudent = async (req, res) => {
     try {
         const { id } = req.params;
-        const updateData = req.body;
+        let updateData = req.body;
+
+        // Check if password is being updated
+        if (updateData.password) {
+            updateData.password = await bcrypt.hash(updateData.password, 10);
+        }
 
         const student = await Student.findByIdAndUpdate(id, updateData, { new: true });
 
@@ -171,10 +176,28 @@ exports.deleteStudent = async (req, res) => {
  */
 exports.addTeacher = async (req, res) => {
     try {
-        const teacher = new Teacher(req.body);
+        const { name, department, specialization, experience, email, phone, password } = req.body;
+
+        // Hash the password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Create teacher object
+        const teacher = new Teacher({ 
+            name, 
+            department, 
+            specialization, 
+            experience, 
+            email, 
+            phone, 
+            password: hashedPassword // Save hashed password
+        });
+
         await teacher.save();
-        res.json({ success: true, message: "Teacher added successfully!", teacher });
+
+        res.status(201).json({ success: true, message: "Teacher added successfully!", teacher });
+
     } catch (error) {
+        console.error("Error in addTeacher:", error);
         res.status(500).json({ success: false, message: "Failed to add teacher", error: error.message });
     }
 };
@@ -182,7 +205,12 @@ exports.addTeacher = async (req, res) => {
 exports.updateTeacher = async (req, res) => {
     try {
         const { id } = req.params;
-        const updateData = req.body;
+        let updateData = req.body;
+
+        // If password is being updated, hash it before saving
+        if (updateData.password) {
+            updateData.password = await bcrypt.hash(updateData.password, 10);
+        }
 
         const teacher = await Teacher.findByIdAndUpdate(id, updateData, { new: true });
 
@@ -197,6 +225,7 @@ exports.updateTeacher = async (req, res) => {
         res.status(500).json({ success: false, message: "Failed to update teacher", error: error.message });
     }
 };
+
 
 
 exports.deleteTeacher = async (req, res) => {
