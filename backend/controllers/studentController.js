@@ -1,6 +1,7 @@
 const Student = require('../models/Student');
 const Assignment = require('../models/Assignment');
 const Placement = require('../models/Placement');
+const Note = require('../models/Note');
 const Chat = require('../models/Chat');
 const Notice = require('../models/Notice');
 const bcrypt = require('bcryptjs');
@@ -41,7 +42,7 @@ exports.loginStudent = async (req, res) => {
 exports.downloadNotes = async (req, res) => {
     try {
         const { id } = req.params;
-        const note = await Notes.findById(id);
+        const note = await Note.findById(id);
         if (!note) {
             return res.status(404).json({ error: "Note not found" });
         }

@@ -71,12 +71,12 @@ exports.adminLogin = async (req, res) => {
  */
 exports.addStudent = async (req, res) => {
     try {
-        const { rollNumber, name, semester, branch, CGPA, email, phone, currentSubjects, password } = req.body;
+        const { rollNumber, registerNumber, name, semester, branch, CGPA, email, phone, currentSubjects, password } = req.body;
 
         // Check if student already exists
-        const existingStudent = await Student.findOne({ rollNumber });
+        const existingStudent = await Student.findOne({ $or: [{ rollNumber }, { registerNumber }] });
         if (existingStudent) {
-            return res.status(400).json({ success: false, message: "Student with this roll number already exists!" });
+            return res.status(400).json({ success: false, message: "Student with this Roll Number or Register Number already exists!" });
         }
 
         // Hash password before saving
@@ -85,6 +85,7 @@ exports.addStudent = async (req, res) => {
         // Create a new student
         const student = new Student({ 
             rollNumber, 
+            registerNumber,  // 🔹 Added registerNumber
             name, 
             semester, 
             branch, 
@@ -92,7 +93,7 @@ exports.addStudent = async (req, res) => {
             email, 
             phone, 
             currentSubjects, 
-            password: hashedPassword // 🔹 Save hashed password
+            password: hashedPassword
         });
 
         await student.save();
@@ -104,6 +105,7 @@ exports.addStudent = async (req, res) => {
         res.status(500).json({ success: false, message: "Server error", error: error.message });
     }
 };
+
 
 /**
  * 📌 Add Students in Bulk (via Excel)
@@ -153,7 +155,7 @@ exports.addStudentBulk = async (req, res) => {
         const validationErrors = [];
         students.forEach((student, index) => {
             // console.log(student);
-            if (!student.rollNumber || !student.name || !student.password) {
+            if (!student.rollNumber || !student.registerNumber || !student.name || !student.password) {
                 validationErrors.push(`Row ${index + 2}: Missing required fields (rollNumber, name, or password)`);
             }
         });
@@ -168,8 +170,10 @@ exports.addStudentBulk = async (req, res) => {
         
         // Check for duplicate roll numbers in the database
         const rollNumbers = students.map(student => student.rollNumber);
-        const existingStudents = await Student.find({
-            rollNumber: { $in: rollNumbers }
+        const registerNumbers = students.map(student => student.registerNumber);
+
+        const existingStudents = await Student.find({ 
+            $or: [{ rollNumber: { $in: rollNumbers } }, { registerNumber: { $in: registerNumbers } }]
         });
         
         if (existingStudents.length > 0) {
@@ -215,7 +219,14 @@ exports.updateStudent = async (req, res) => {
         const { id } = req.params;
         let updateData = req.body;
 
-        // Check if password is being updated
+        // Check if registerNumber already exists for another student
+        if (updateData.registerNumber) {
+            const existingStudent = await Student.findOne({ registerNumber: updateData.registerNumber, _id: { $ne: id } });
+            if (existingStudent) {
+                return res.status(400).json({ success: false, message: "Register Number already exists for another student!" });
+            }
+        }
+
         if (updateData.password) {
             updateData.password = await bcrypt.hash(updateData.password, 10);
         }
@@ -233,6 +244,7 @@ exports.updateStudent = async (req, res) => {
         res.status(500).json({ success: false, message: "Failed to update student", error: error.message });
     }
 };
+
 
 exports.deleteStudent = async (req, res) => {
     try {
