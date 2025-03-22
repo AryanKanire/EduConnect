@@ -14,6 +14,7 @@ const {
     getAssignments,
     // getAttendance
 } = require('../controllers/studentController');
+const { cloudinaryUpload } = require('../middlewares/uploadMiddleware');
 
 const router = express.Router();
 
