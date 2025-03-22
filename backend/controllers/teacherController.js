@@ -6,6 +6,7 @@ const Teacher = require('../models/Teacher');
 const Student = require('../models/Student');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const StudentAssignment = require('../models/StudentAssignment');
 
 
 /**
@@ -176,6 +177,45 @@ exports.getAssignments = async (req, res) => {
         res.status(200).json(assignments);
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error });
+    }
+};
+
+exports.viewSubmissions = async (req, res) => {
+    try {
+        const { assignmentId } = req.params;
+
+        const submissions = await StudentAssignment.find({ assignmentId })
+            .populate('studentId', 'name rollNumber email') // Get student details
+            .populate('assignmentId', 'title dueDate'); // Get assignment details
+
+        if (submissions.length === 0) {
+            return res.status(404).json({ message: 'No submissions found for this assignment' });
+        }
+
+        res.status(200).json({ message: 'Submissions retrieved successfully', submissions });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+exports.updateSubmissionStatus = async (req, res) => {
+    try {
+        const { submissionId } = req.params;
+        const { status } = req.body; // New status (Pending, Reviewed, Graded)
+
+        const submission = await StudentAssignment.findByIdAndUpdate(
+            submissionId,
+            { status },
+            { new: true }
+        );
+
+        if (!submission) {
+            return res.status(404).json({ message: 'Submission not found' });
+        }
+
+        res.status(200).json({ message: 'Submission status updated', submission });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
 

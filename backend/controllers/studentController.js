@@ -6,6 +6,7 @@ const Chat = require('../models/Chat');
 const Notice = require('../models/Notice');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const StudentAssignment = require('../models/StudentAssignment'); 
 // const Attendance = require('../models/Attendance');
 
 exports.loginStudent = async (req, res) => {
@@ -52,22 +53,46 @@ exports.downloadNotes = async (req, res) => {
     }
 };
 
+exports.getAssignments = async (req, res) => {
+    try {
+        const assignments = await Assignment.find();
+        res.status(200).json(assignments);
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error });
+    }
+};
+
 /**
  * 📌 Submit Assignment
  */
+
 exports.submitAssignment = async (req, res) => {
     try {
-        const { assignmentId, fileUrl } = req.body;
-        const assignment = new Assignment({
-            studentId: req.user.id,
-            assignmentId,
-            fileUrl,
-            submittedAt: new Date()
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+
+        const { assignmentId } = req.params;  // Get assignment ID from URL
+        const studentId = req.user.id;  // Extract student ID from JWT token
+
+        // ✅ Check if the assignment exists
+        const assignmentExists = await Assignment.findById(assignmentId);
+        if (!assignmentExists) {
+            return res.status(404).json({ message: 'Assignment not found' });
+        }
+
+        // ✅ Store student submission
+        const studentAssignment = new StudentAssignment({
+            assignmentId: assignmentId,
+            studentId: studentId,
+            fileUrl: req.file.path, // Uploaded file path
         });
-        await assignment.save();
-        res.json({ message: "Assignment submitted successfully!" });
+
+        await studentAssignment.save();
+
+        res.status(201).json({ message: 'Assignment submitted successfully', studentAssignment });
     } catch (error) {
-        res.status(500).json({ error: "Failed to submit assignment" });
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
 

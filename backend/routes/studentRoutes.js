@@ -11,6 +11,7 @@ const {
     getNotices,
     getStudentProfile,
     loginStudent,
+    getAssignments,
     // getAttendance
 } = require('../controllers/studentController');
 
@@ -26,7 +27,8 @@ router.get('/notes/:id', authenticateUser, authorizeStudent, downloadNotes);
 /**
  * 📌 Assignment Section (Submit Assignments)
  */
-router.post('/assignments/submit', authenticateUser, authorizeStudent, submitAssignment);
+router.get('/assignments/get',authenticateUser, authorizeStudent, getAssignments);
+router.post('/submit-assignment/:assignmentId', authenticateUser, authorizeStudent,cloudinaryUpload.single('file'), submitAssignment);
 
 /**
  * 📌 Placement Section (Apply for Placement & View Placements)

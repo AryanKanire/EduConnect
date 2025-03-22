@@ -10,7 +10,9 @@ const {
     getChatMessages,
     sendMessage,
     getTeacherProfile,
-    teacherLogin
+    teacherLogin,
+    viewSubmissions,
+    updateSubmissionStatus
 } = require('../controllers/teacherController');
 
 const router = express.Router();
@@ -28,6 +30,8 @@ router.get('/notes', authenticateUser, authorizeTeacher, getUploadedNotes);
  */
 router.post('/assignments/upload', authenticateUser, authorizeTeacher, cloudinaryUpload.single('file'), uploadAssignment);
 router.get('/assignments', authenticateUser, authorizeTeacher, getAssignments);
+router.get('/view-submissions/:assignmentId',authenticateUser, authorizeTeacher, viewSubmissions);
+router.put('/update-submission-status/:submissionId',authenticateUser, authorizeTeacher,updateSubmissionStatus);
 
 /**
  * 📌 Chat Section (Teacher ↔ Student Chat using Socket.io)
