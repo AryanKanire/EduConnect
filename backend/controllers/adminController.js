@@ -110,10 +110,79 @@ exports.addStudent = async (req, res) => {
  */
 exports.addStudentBulk = async (req, res) => {
     try {
+        console.log("Starting bulk student upload process");
+        
+        // Check if file exists in request
+        if (!req.file) {
+            console.log("No file received in request");
+            return res.status(400).json({ 
+                success: false, 
+                message: "No file uploaded", 
+                error: "Please upload an Excel file" 
+            });
+        }
+        
+        console.log("File received:", req.file.originalname, "Size:", req.file.size, "Mimetype:", req.file.mimetype);
+        
+        // Ensure buffer exists
+        if (!req.file.buffer || req.file.buffer.length === 0) {
+            console.log("File buffer is empty or undefined");
+            return res.status(400).json({ 
+                success: false, 
+                message: "Invalid file upload", 
+                error: "File buffer is empty" 
+            });
+        }
+        
         // Parse students from Excel file
+        console.log("Parsing Excel file...");
         const students = await parseExcelFile(req.file.buffer);
+        
+        if (!students || students.length === 0) {
+            console.log("No student data found in Excel file");
+            return res.status(400).json({ 
+                success: false, 
+                message: "Excel file contains no valid student data", 
+                error: "No students found in file" 
+            });
+        }
+        
+        console.log(`Successfully parsed ${students.length} students from Excel file`);
+        
+        // Validate student data
+        const validationErrors = [];
+        students.forEach((student, index) => {
+            // console.log(student);
+            if (!student.rollNumber || !student.name || !student.password) {
+                validationErrors.push(`Row ${index + 2}: Missing required fields (rollNumber, name, or password)`);
+            }
+        });
+        
+        if (validationErrors.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid student data in Excel file",
+                errors: validationErrors
+            });
+        }
+        
+        // Check for duplicate roll numbers in the database
+        const rollNumbers = students.map(student => student.rollNumber);
+        const existingStudents = await Student.find({
+            rollNumber: { $in: rollNumbers }
+        });
+        
+        if (existingStudents.length > 0) {
+            const duplicates = existingStudents.map(student => student.rollNumber);
+            return res.status(400).json({
+                success: false,
+                message: "Some students already exist in the database",
+                duplicates: duplicates
+            });
+        }
 
         // Hash passwords before inserting
+        console.log("Hashing passwords for all students...");
         const studentsWithHashedPasswords = await Promise.all(
             students.map(async (student) => {
                 const hashedPassword = await bcrypt.hash(student.password, 10);
@@ -122,11 +191,22 @@ exports.addStudentBulk = async (req, res) => {
         );
 
         // Insert students into database
+        console.log("Inserting students into database...");
         await Student.insertMany(studentsWithHashedPasswords);
+        console.log(`Successfully added ${studentsWithHashedPasswords.length} students to database`);
 
-        res.json({ success: true, message: "Students added successfully!" });
+        res.json({ 
+            success: true, 
+            message: "Students added successfully!", 
+            count: studentsWithHashedPasswords.length 
+        });
     } catch (error) {
-        res.status(500).json({ success: false, message: "Failed to add students", error: error.message });
+        console.error("Error in addStudentBulk:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Failed to add students", 
+            error: error.message 
+        });
     }
 };
 

@@ -44,39 +44,91 @@ exports.teacherLogin = async (req, res) => {
  */
 exports.uploadNotes = async (req, res) => {
     try {
+        console.log("==== CONTROLLER START ====");
+        
         if (!req.file) {
-            return res.status(400).json({ message: 'No file uploaded' });
+            return res.status(400).json({ success: false, message: 'No file uploaded' });
         }
 
+        // Safer property access
+        console.log("File object received:", JSON.stringify(req.file, null, 2));
+        
         const { title, description, year, subject } = req.body;
 
         // Ensure required fields are provided
         if (!year || !subject || !title) {
-            return res.status(400).json({ message: "Year, Subject, and Title are required" });
+            return res.status(400).json({ success: false, message: "Year, Subject, and Title are required" });
+        }
+        
+        // Use safer property access with optional chaining
+        let fileUrl = '';
+        if (req.file?.path) {
+            fileUrl = req.file.path;
+        } else if (req.file?.secure_url) {
+            fileUrl = req.file.secure_url;
+        } else if (req.file?.url) {
+            fileUrl = req.file.url;
+        }
+        
+        let fileName = '';
+        if (req.file?.originalname) {
+            fileName = req.file.originalname;
+        } else if (req.file?.original_filename) {
+            fileName = req.file.original_filename;
+        } else if (req.file?.filename) {
+            fileName = req.file.filename;
+        } else {
+            fileName = 'unnamed';
         }
 
-        const { path, originalname } = req.file;
+        console.log("Extracted file properties:", {
+            fileUrl,
+            fileName
+        });
+
+        // Check if file URL was successfully extracted
+        if (!fileUrl) {
+            return res.status(500).json({ 
+                success: false, 
+                message: 'Failed to process file upload. No URL available.' 
+            });
+        }
 
         const note = new Note({
-            teacher: req.user.id, // Ensure authentication middleware is used
+            teacher: req.user.id,
             title,
             description,
-            fileUrl: path,  // Cloudinary file URL
-            fileName: originalname,
+            fileUrl: fileUrl,
+            fileName: fileName,
             year,
             subject
         });
 
         await note.save();
-        res.status(201).json({ success: true, message: 'Notes uploaded successfully', note });
+        
+        res.status(201).json({ 
+            success: true, 
+            message: 'Notes uploaded successfully', 
+            note: {
+                id: note._id,
+                title: note.title,
+                fileName: note.fileName,
+                fileUrl: note.fileUrl,
+                year: note.year,
+                subject: note.subject
+            }
+        });
 
     } catch (error) {
         console.error("Error in uploadNotes:", error);
-        res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+        res.status(500).json({ 
+            success: false, 
+            message: 'Server Error', 
+            error: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
     }
 };
-
-
 /**
  * 📌 Get Uploaded Notes (Teacher views uploaded notes)
  */
@@ -99,11 +151,13 @@ exports.uploadAssignment = async (req, res) => {
         }
 
         const { path, originalname } = req.file;
+        const { title, dueDate } = req.body;
 
         const assignment = new Assignment({
-            teacher: req.user.id,
             fileUrl: path,
-            fileName: originalname,
+            title: title,
+            uploadedBy: req.user.id,
+            dueDate: dueDate,
         });
 
         await assignment.save();

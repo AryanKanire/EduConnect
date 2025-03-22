@@ -23,7 +23,8 @@ const parseExcelFile = async (fileBuffer) => {
                     CGPA: parseFloat(row.getCell(5).value), // Convert to float for CGPA
                     email: row.getCell(6).value,
                     phone: row.getCell(7).value.toString(), // Convert to string to avoid number formatting issues
-                    currentSubjects: row.getCell(8).value ? row.getCell(8).value.split(',') : [], // Convert to array
+                    currentSubjects: row.getCell(8).value ? row.getCell(8).value.split(',') : [],
+                    password: row.getCell(9).value.toString() // Convert to array
                 });
             }
         });

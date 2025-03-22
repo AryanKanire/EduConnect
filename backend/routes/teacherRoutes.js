@@ -1,6 +1,6 @@
 const express = require('express');
 const { authenticateUser, authorizeTeacher } = require('../middlewares/authMiddleware');
-const { cloudinaryUpload } = require('../middlewares/uploadMiddleware'); // Corrected file upload middleware
+const { cloudinaryUpload, debugFileUpload } = require('../middlewares/uploadMiddleware'); // Corrected file upload middleware
 
 const {
     uploadNotes,
@@ -20,7 +20,7 @@ router.post('/login', teacherLogin);
 /**
  * 📌 Notes Section (Upload & View Notes)
  */
-router.post('/notes/upload', authenticateUser, authorizeTeacher, cloudinaryUpload.single('file'), uploadNotes);
+router.post('/notes/upload', authenticateUser, authorizeTeacher, debugFileUpload, cloudinaryUpload.single('file'), uploadNotes);
 router.get('/notes', authenticateUser, authorizeTeacher, getUploadedNotes);
 
 /**

@@ -1,0 +1,684 @@
+{
+    "info": {
+      "name": "EduConnect API",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+      {
+        "name": "Authentication",
+        "item": [
+          {
+            "name": "Admin Login",
+            "request": {
+              "method": "POST",
+              "url": "{{base_url}}/api/admin/login",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n    \"email\": \"admin@example.com\",\n    \"password\": \"password123\"\n}",
+                "options": {
+                  "raw": {
+                    "language": "json"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "name": "Teacher Login",
+            "request": {
+              "method": "POST",
+              "url": "{{base_url}}/api/teacher/login",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n    \"email\": \"teacher@example.com\",\n    \"password\": \"password123\"\n}",
+                "options": {
+                  "raw": {
+                    "language": "json"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "name": "Student Login",
+            "request": {
+              "method": "POST",
+              "url": "{{base_url}}/api/student/login",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n    \"email\": \"student@example.com\",\n    \"password\": \"password123\"\n}",
+                "options": {
+                  "raw": {
+                    "language": "json"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "Admin",
+        "item": [
+          {
+            "name": "Student Management",
+            "item": [
+              {
+                "name": "Add Single Student",
+                "request": {
+                  "method": "POST",
+                  "url": "{{base_url}}/api/admin/add/student",
+                  "header": [
+                    {
+                      "key": "Authorization",
+                      "value": "Bearer {{admin_token}}"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"name\": \"Student Name\",\n    \"email\": \"student@example.com\",\n    \"rollNumber\": \"R12345\",\n    \"password\": \"password123\"\n}",
+                    "options": {
+                      "raw": {
+                        "language": "json"
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "name": "Upload Students Bulk",
+                "request": {
+                  "method": "POST",
+                  "url": "{{base_url}}/api/admin/add/studentsbulk",
+                  "header": [
+                    {
+                      "key": "Authorization",
+                      "value": "Bearer {{admin_token}}"
+                    }
+                  ],
+                  "body": {
+                    "mode": "formdata",
+                    "formdata": [
+                      {
+                        "key": "file",
+                        "type": "file",
+                        "src": "/path/to/students.xlsx"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "name": "Update Student",
+                "request": {
+                  "method": "PUT",
+                  "url": "{{base_url}}/api/admin/students/update/:id",
+                  "header": [
+                    {
+                      "key": "Authorization",
+                      "value": "Bearer {{admin_token}}"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"name\": \"Updated Student Name\",\n    \"email\": \"updated@example.com\"\n}",
+                    "options": {
+                      "raw": {
+                        "language": "json"
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "name": "Delete Student",
+                "request": {
+                  "method": "DELETE",
+                  "url": "{{base_url}}/api/admin/students/delete/:id",
+                  "header": [
+                    {
+                      "key": "Authorization",
+                      "value": "Bearer {{admin_token}}"
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "Get All Students",
+                "request": {
+                  "method": "GET",
+                  "url": "{{base_url}}/api/admin/students",
+                  "header": [
+                    {
+                      "key": "Authorization",
+                      "value": "Bearer {{admin_token}}"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "name": "Teacher Management",
+            "item": [
+              {
+                "name": "Add Teacher",
+                "request": {
+                  "method": "POST",
+                  "url": "{{base_url}}/api/admin/add/teachers",
+                  "header": [
+                    {
+                      "key": "Authorization",
+                      "value": "Bearer {{admin_token}}"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"name\": \"Teacher Name\",\n    \"email\": \"teacher@example.com\",\n    \"password\": \"password123\",\n    \"subject\": \"Mathematics\"\n}",
+                    "options": {
+                      "raw": {
+                        "language": "json"
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "name": "Update Teacher",
+                "request": {
+                  "method": "PUT",
+                  "url": "{{base_url}}/api/admin/teachers/update/:id",
+                  "header": [
+                    {
+                      "key": "Authorization",
+                      "value": "Bearer {{admin_token}}"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"name\": \"Updated Teacher Name\",\n    \"subject\": \"Physics\"\n}",
+                    "options": {
+                      "raw": {
+                        "language": "json"
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "name": "Delete Teacher",
+                "request": {
+                  "method": "DELETE",
+                  "url": "{{base_url}}/api/admin/teachers/delete/:id",
+                  "header": [
+                    {
+                      "key": "Authorization",
+                      "value": "Bearer {{admin_token}}"
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "Get All Teachers",
+                "request": {
+                  "method": "GET",
+                  "url": "{{base_url}}/api/admin/teachers",
+                  "header": [
+                    {
+                      "key": "Authorization",
+                      "value": "Bearer {{admin_token}}"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "name": "Placement Management",
+            "item": [
+              {
+                "name": "Add Placement",
+                "request": {
+                  "method": "POST",
+                  "url": "{{base_url}}/api/admin/add/placement",
+                  "header": [
+                    {
+                      "key": "Authorization",
+                      "value": "Bearer {{admin_token}}"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"companyName\": \"Example Corp\",\n    \"role\": \"Software Engineer\",\n    \"package\": \"12 LPA\",\n    \"description\": \"Entry level software engineering position\",\n    \"deadline\": \"2023-12-31\"\n}",
+                    "options": {
+                      "raw": {
+                        "language": "json"
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "name": "Update Placement",
+                "request": {
+                  "method": "PUT",
+                  "url": "{{base_url}}/api/admin/update/placements/:id",
+                  "header": [
+                    {
+                      "key": "Authorization",
+                      "value": "Bearer {{admin_token}}"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"companyName\": \"Updated Corp\",\n    \"package\": \"15 LPA\"\n}",
+                    "options": {
+                      "raw": {
+                        "language": "json"
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "name": "Delete Placement",
+                "request": {
+                  "method": "DELETE",
+                  "url": "{{base_url}}/api/admin/delete/placements/:id",
+                  "header": [
+                    {
+                      "key": "Authorization",
+                      "value": "Bearer {{admin_token}}"
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "Get All Placements",
+                "request": {
+                  "method": "GET",
+                  "url": "{{base_url}}/api/admin/placements",
+                  "header": [
+                    {
+                      "key": "Authorization",
+                      "value": "Bearer {{admin_token}}"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "name": "Notice Management",
+            "item": [
+              {
+                "name": "Create Notice",
+                "request": {
+                  "method": "POST",
+                  "url": "{{base_url}}/api/admin/add/notices",
+                  "header": [
+                    {
+                      "key": "Authorization",
+                      "value": "Bearer {{admin_token}}"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"title\": \"Important Announcement\",\n    \"description\": \"All students must attend the orientation\",\n    \"date\": \"2023-08-15\"\n}",
+                    "options": {
+                      "raw": {
+                        "language": "json"
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "name": "Delete Notice",
+                "request": {
+                  "method": "DELETE",
+                  "url": "{{base_url}}/api/admin/notices/:id",
+                  "header": [
+                    {
+                      "key": "Authorization",
+                      "value": "Bearer {{admin_token}}"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Teacher",
+        "item": [
+          {
+            "name": "Notes Management",
+            "item": [
+              {
+                "name": "Upload Notes",
+                "request": {
+                  "method": "POST",
+                  "url": "{{base_url}}/api/teacher/notes/upload",
+                  "header": [
+                    {
+                      "key": "Authorization",
+                      "value": "Bearer {{teacher_token}}"
+                    }
+                  ],
+                  "body": {
+                    "mode": "formdata",
+                    "formdata": [
+                      {
+                        "key": "title",
+                        "value": "Chapter 1 Notes",
+                        "type": "text"
+                      },
+                      {
+                        "key": "description",
+                        "value": "Introduction to the subject",
+                        "type": "text"
+                      },
+                      {
+                        "key": "file",
+                        "type": "file",
+                        "src": "/path/to/notes.pdf"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "name": "Get Uploaded Notes",
+                "request": {
+                  "method": "GET",
+                  "url": "{{base_url}}/api/teacher/notes",
+                  "header": [
+                    {
+                      "key": "Authorization",
+                      "value": "Bearer {{teacher_token}}"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "name": "Assignment Management",
+            "item": [
+              {
+                "name": "Upload Assignment",
+                "request": {
+                  "method": "POST",
+                  "url": "{{base_url}}/api/teacher/assignments/upload",
+                  "header": [
+                    {
+                      "key": "Authorization",
+                      "value": "Bearer {{teacher_token}}"
+                    }
+                  ],
+                  "body": {
+                    "mode": "formdata",
+                    "formdata": [
+                      {
+                        "key": "title",
+                        "value": "Assignment 1",
+                        "type": "text"
+                      },
+                      {
+                        "key": "description",
+                        "value": "Complete the exercises",
+                        "type": "text"
+                      },
+                      {
+                        "key": "dueDate",
+                        "value": "2023-09-30",
+                        "type": "text"
+                      },
+                      {
+                        "key": "file",
+                        "type": "file",
+                        "src": "/path/to/assignment.pdf"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "name": "Get Assignments",
+                "request": {
+                  "method": "GET",
+                  "url": "{{base_url}}/api/teacher/assignments",
+                  "header": [
+                    {
+                      "key": "Authorization",
+                      "value": "Bearer {{teacher_token}}"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "name": "Chat",
+            "item": [
+              {
+                "name": "Get Chat Messages",
+                "request": {
+                  "method": "GET",
+                  "url": "{{base_url}}/api/teacher/chat/:studentId",
+                  "header": [
+                    {
+                      "key": "Authorization",
+                      "value": "Bearer {{teacher_token}}"
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "Send Message",
+                "request": {
+                  "method": "POST",
+                  "url": "{{base_url}}/api/teacher/chat/:studentId",
+                  "header": [
+                    {
+                      "key": "Authorization",
+                      "value": "Bearer {{teacher_token}}"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"message\": \"Hello, how can I help you with your studies?\"\n}",
+                    "options": {
+                      "raw": {
+                        "language": "json"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "Profile",
+            "item": [
+              {
+                "name": "Get Teacher Profile",
+                "request": {
+                  "method": "GET",
+                  "url": "{{base_url}}/api/teacher/profile",
+                  "header": [
+                    {
+                      "key": "Authorization",
+                      "value": "Bearer {{teacher_token}}"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Student",
+        "item": [
+          {
+            "name": "Get Student Profile",
+            "request": {
+              "method": "GET",
+              "url": "{{base_url}}/api/student/profile",
+              "header": [
+                {
+                  "key": "Authorization",
+                  "value": "Bearer {{student_token}}"
+                }
+              ]
+            }
+          },
+          {
+            "name": "Get Notes",
+            "request": {
+              "method": "GET",
+              "url": "{{base_url}}/api/student/notes",
+              "header": [
+                {
+                  "key": "Authorization",
+                  "value": "Bearer {{student_token}}"
+                }
+              ]
+            }
+          },
+          {
+            "name": "Get Assignments",
+            "request": {
+              "method": "GET",
+              "url": "{{base_url}}/api/student/assignments",
+              "header": [
+                {
+                  "key": "Authorization",
+                  "value": "Bearer {{student_token}}"
+                }
+              ]
+            }
+          },
+          {
+            "name": "Submit Assignment",
+            "request": {
+              "method": "POST",
+              "url": "{{base_url}}/api/student/assignments/submit/:assignmentId",
+              "header": [
+                {
+                  "key": "Authorization",
+                  "value": "Bearer {{student_token}}"
+                }
+              ],
+              "body": {
+                "mode": "formdata",
+                "formdata": [
+                  {
+                    "key": "file",
+                    "type": "file",
+                    "src": "/path/to/submission.pdf"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "name": "Get Chat Messages with Teacher",
+            "request": {
+              "method": "GET",
+              "url": "{{base_url}}/api/student/chat/:teacherId",
+              "header": [
+                {
+                  "key": "Authorization",
+                  "value": "Bearer {{student_token}}"
+                }
+              ]
+            }
+          },
+          {
+            "name": "Send Message to Teacher",
+            "request": {
+              "method": "POST",
+              "url": "{{base_url}}/api/student/chat/:teacherId",
+              "header": [
+                {
+                  "key": "Authorization",
+                  "value": "Bearer {{student_token}}"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n    \"message\": \"I have a question about the assignment\"\n}",
+                "options": {
+                  "raw": {
+                    "language": "json"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "name": "Get Placements",
+            "request": {
+              "method": "GET",
+              "url": "{{base_url}}/api/student/placements",
+              "header": [
+                {
+                  "key": "Authorization",
+                  "value": "Bearer {{student_token}}"
+                }
+              ]
+            }
+          },
+          {
+            "name": "Apply for Placement",
+            "request": {
+              "method": "POST",
+              "url": "{{base_url}}/api/student/placements/apply/:placementId",
+              "header": [
+                {
+                  "key": "Authorization",
+                  "value": "Bearer {{student_token}}"
+                }
+              ],
+              "body": {
+                "mode": "formdata",
+                "formdata": [
+                  {
+                    "key": "resume",
+                    "type": "file",
+                    "src": "/path/to/resume.pdf"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "variable": [
+      {
+        "key": "base_url",
+        "value": "http://localhost:5000",
+        "type": "string"
+      },
+      {
+        "key": "admin_token",
+        "value": "your_admin_jwt_token",
+        "type": "string"
+      },
+      {
+        "key": "teacher_token",
+        "value": "your_teacher_jwt_token",
+        "type": "string"
+      },
+      {
+        "key": "student_token",
+        "value": "your_student_jwt_token",
+        "type": "string"
+      }
+    ]
+  }

@@ -1,6 +1,6 @@
 const express = require('express');
 const { authenticateUser, authorizeAdmin } = require('../middlewares/authMiddleware');
-const { excelUpload } = require('../middlewares/uploadMiddleware');
+const { excelUpload, debugExcelUpload } = require('../middlewares/uploadMiddleware');
 
 const { 
     addStudentBulk, 
@@ -31,7 +31,7 @@ router.post('/login', adminLogin);
  * 📌 Student Management
  */
 router.post('/add/student', authenticateUser, authorizeAdmin, addStudent);
-router.post('/add/studentsbulk', authenticateUser, authorizeAdmin, excelUpload.single('file'), addStudentBulk);
+router.post('/add/studentsbulk', authenticateUser, authorizeAdmin, debugExcelUpload, excelUpload.single('file'), addStudentBulk);
 router.put('/students/update/:id', authenticateUser, authorizeAdmin, updateStudent); 
 router.delete('/students/delete/:id', authenticateUser, authorizeAdmin, deleteStudent); 
 router.get('/students', authenticateUser, authorizeAdmin, getAllStudents);
