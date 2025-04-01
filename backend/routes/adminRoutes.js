@@ -19,7 +19,8 @@ const {
     deleteStudent,
     updateTeacher,
     deleteTeacher,
-    addPlacement
+    addPlacement,
+    getAllNotices
 } = require('../controllers/adminController');
 
 const router = express.Router();
@@ -55,6 +56,7 @@ router.get('/placements', authenticateUser, authorizeAdmin, getAllPlacements);
 /**
  * 📌 Notice Management (Calendar Notices)
  */
+router.get('/notices', authenticateUser, authorizeAdmin, getAllNotices);
 router.post('/add/notices', authenticateUser, authorizeAdmin, createNotice);
 router.delete('/notices/:id', authenticateUser, authorizeAdmin, deleteNotice);
 

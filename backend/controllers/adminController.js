@@ -434,6 +434,20 @@ exports.getAllPlacements = async (req, res) => {
     }
 };
 
+
+/**
+ * 📌 Get All Notices
+ */
+exports.getAllNotices = async (req, res) => {
+    try {
+        const notices = await Notice.find();
+        res.json({ success: true, notices });
+    } catch (error) {
+        console.error("Error in getAllNotices:", error);
+        res.status(500).json({ success: false, message: "Failed to fetch notices", error: error.message });
+    }
+};
+
 /**
  * 📌 Create Notice (Calendar Notices)
  */
