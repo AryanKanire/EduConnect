@@ -1,4 +1,3 @@
-
 import { motion } from "framer-motion";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { 
@@ -26,71 +25,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { useState } from "react";
-
-// Sample notes data
-const notesData = [
-  {
-    id: 1,
-    title: "Database Management Systems: Normalization",
-    subject: "Database Systems",
-    uploadedBy: "Dr. Sarah Johnson",
-    uploadDate: "May 15, 2023",
-    fileSize: "2.5 MB",
-    fileType: "PDF",
-    starred: true
-  },
-  {
-    id: 2,
-    title: "Computer Networks: OSI Model",
-    subject: "Computer Networks",
-    uploadedBy: "Prof. Michael Chen",
-    uploadDate: "May 10, 2023",
-    fileSize: "1.8 MB",
-    fileType: "PDF",
-    starred: false
-  },
-  {
-    id: 3,
-    title: "Cloud Computing: Service Models",
-    subject: "Cloud Computing",
-    uploadedBy: "Dr. Emily Wong",
-    uploadDate: "May 5, 2023",
-    fileSize: "3.2 MB",
-    fileType: "PPTX",
-    starred: true
-  },
-  {
-    id: 4,
-    title: "Operating Systems: Process Scheduling",
-    subject: "Operating Systems",
-    uploadedBy: "Prof. David Miller",
-    uploadDate: "April 30, 2023",
-    fileSize: "1.5 MB",
-    fileType: "PDF",
-    starred: false
-  },
-  {
-    id: 5,
-    title: "Web Development: JavaScript Frameworks",
-    subject: "Web Development",
-    uploadedBy: "Prof. Jessica Brown",
-    uploadDate: "April 25, 2023",
-    fileSize: "4.1 MB",
-    fileType: "ZIP",
-    starred: false
-  },
-  {
-    id: 6,
-    title: "Artificial Intelligence: Neural Networks",
-    subject: "Artificial Intelligence",
-    uploadedBy: "Dr. Robert Kim",
-    uploadDate: "April 20, 2023",
-    fileSize: "2.9 MB",
-    fileType: "PDF",
-    starred: false
-  }
-];
+import { useState, useEffect } from "react";
+import axios from "axios";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { useForm } from "react-hook-form";
 
 // Subjects for filtering
 const subjects = [
@@ -105,12 +44,28 @@ const subjects = [
 
 const Notes = () => {
   const { role } = useUserRole();
+  const [notes, setNotes] = useState([]); // Ensure notes is initialized as an array
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("All Subjects");
   const [sortBy, setSortBy] = useState("newest");
-  const [starredNotes, setStarredNotes] = useState<number[]>(
-    notesData.filter(note => note.starred).map(note => note.id)
-  );
+  const [starredNotes, setStarredNotes] = useState<number[]>([]);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false); // State for modal
+  const { register, handleSubmit, reset } = useForm();
+
+  // Fetch notes from the backend
+  useEffect(() => {
+    const fetchNotes = async () => {
+      try {
+        const response = await axios.get("/api/teacher/notes/"); // Updated API route
+        const data = Array.isArray(response.data) ? response.data : []; // Ensure response is an array
+        setNotes(data);
+      } catch (error) {
+        console.error("Failed to fetch notes:", error);
+        setNotes([]); // Fallback to an empty array in case of an error
+      }
+    };
+    fetchNotes();
+  }, []);
 
   // Toggle star status
   const toggleStar = (noteId: number) => {
@@ -121,20 +76,56 @@ const Notes = () => {
     }
   };
 
+  // Handle note download
+  const handleDownload = async (noteId: string) => {
+    try {
+      const response = await axios.get(`/api/notes/${noteId}/download`);
+      const link = document.createElement("a");
+      link.href = response.data.downloadUrl;
+      link.download = ""; // Optional: Set a default filename
+      link.click();
+    } catch (error) {
+      console.error("Failed to download note:", error);
+    }
+  };
+
+  const handleUpload = async (data: any) => {
+    try {
+      const formData = new FormData();
+      formData.append("title", data.title);
+      formData.append("description", data.description);
+      formData.append("year", data.year);
+      formData.append("subject", data.subject);
+      formData.append("file", data.file[0]);
+
+      await axios.post("/api/teacher/notes/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      }); // Updated API route
+
+      setIsUploadModalOpen(false);
+      reset();
+      // Refresh notes after upload
+      const response = await axios.get("/api/teacher/notes/"); // Updated API route
+      setNotes(response.data);
+    } catch (error) {
+      console.error("Failed to upload note:", error);
+    }
+  };
+
   // Filter notes based on search, subject, and sort
-  const filteredNotes = notesData
+  const filteredNotes = notes
     .filter(note => {
       const matchesSearch = note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            note.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           note.uploadedBy.toLowerCase().includes(searchTerm.toLowerCase());
+                           note.teacher.name.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesSubject = selectedSubject === "All Subjects" || note.subject === selectedSubject;
       
       return matchesSearch && matchesSubject;
     })
     .sort((a, b) => {
-      const dateA = new Date(a.uploadDate);
-      const dateB = new Date(b.uploadDate);
+      const dateA = new Date(a.createdAt);
+      const dateB = new Date(b.createdAt);
       
       if (sortBy === "newest") {
         return dateB.getTime() - dateA.getTime();
@@ -232,7 +223,10 @@ const Notes = () => {
         </div>
 
         {role === "teacher" && (
-          <Button className="self-start flex items-center gap-2">
+          <Button
+            className="self-start flex items-center gap-2"
+            onClick={() => setIsUploadModalOpen(true)} // Open modal
+          >
             <Upload className="h-4 w-4" />
             Upload New Notes
           </Button>
@@ -242,12 +236,12 @@ const Notes = () => {
         {filteredNotes.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredNotes.map((note) => (
-              <Card key={note.id} className="p-4 hover:shadow-md transition-shadow">
+              <Card key={note._id} className="p-4 hover:shadow-md transition-shadow">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
                     <div className={`p-2 rounded-md ${
-                      note.fileType === "PDF" ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400" :
-                      note.fileType === "PPTX" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" :
+                      note.fileName.endsWith(".pdf") ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400" :
+                      note.fileName.endsWith(".pptx") ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" :
                       "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
                     }`}>
                       <FileText className="h-5 w-5" />
@@ -262,11 +256,11 @@ const Notes = () => {
                       variant="ghost" 
                       size="icon" 
                       className="h-8 w-8 rounded-full"
-                      onClick={() => toggleStar(note.id)}
+                      onClick={() => toggleStar(note._id)}
                     >
                       <Star 
                         className={`h-4 w-4 ${
-                          starredNotes.includes(note.id) 
+                          starredNotes.includes(note._id) 
                             ? "fill-yellow-400 text-yellow-400" 
                             : "text-muted-foreground"
                         }`} 
@@ -279,7 +273,7 @@ const Notes = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDownload(note._id)}>
                           <Download className="h-4 w-4 mr-2" /> Download
                         </DropdownMenuItem>
                         {role !== "student" && (
@@ -298,17 +292,17 @@ const Notes = () => {
                 </div>
                 <div className="mt-4">
                   <div className="flex justify-between items-center text-xs text-muted-foreground">
-                    <span>Uploaded by: {note.uploadedBy}</span>
+                    <span>Uploaded by: {note.teacher.name}</span>
                     <Badge variant="outline" className="text-xs">
-                      {note.fileType}
+                      {note.fileName.split('.').pop()?.toUpperCase()}
                     </Badge>
                   </div>
                   <div className="flex justify-between items-center mt-1 text-xs text-muted-foreground">
-                    <span>{note.uploadDate}</span>
-                    <span>{note.fileSize}</span>
+                    <span>{new Date(note.createdAt).toLocaleDateString()}</span>
+                    <span>{note.fileName}</span>
                   </div>
                 </div>
-                <Button className="w-full mt-4 flex items-center gap-2">
+                <Button className="w-full mt-4 flex items-center gap-2" onClick={() => handleDownload(note._id)}>
                   <Download className="h-4 w-4" />
                   Download
                 </Button>
@@ -334,6 +328,51 @@ const Notes = () => {
             )}
           </Card>
         )}
+
+        {/* Upload Notes Modal */}
+        <Dialog open={isUploadModalOpen} onOpenChange={setIsUploadModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Upload New Notes</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit(handleUpload)}>
+              <div className="flex flex-col gap-4">
+                <Input
+                  type="text"
+                  placeholder="Title"
+                  {...register("title", { required: true })}
+                />
+                <Textarea
+                  placeholder="Description"
+                  {...register("description")}
+                />
+                <Input
+                  type="text"
+                  placeholder="Year"
+                  {...register("year", { required: true })}
+                />
+                <Input
+                  type="text"
+                  placeholder="Subject"
+                  {...register("subject", { required: true })}
+                />
+                <Input
+                  type="file"
+                  {...register("file", { required: true })}
+                />
+              </div>
+              <DialogFooter>
+                <Button type="submit">Upload</Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsUploadModalOpen(false)}
+                >
+                  Cancel
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </MainLayout>
   );

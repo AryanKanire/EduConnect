@@ -1,6 +1,7 @@
 const express = require('express');
 const { authenticateUser, authorizeAdmin } = require('../middlewares/authMiddleware');
 const { excelUpload, debugExcelUpload } = require('../middlewares/uploadMiddleware');
+const jwt = require('jsonwebtoken');
 
 const { 
     addStudentBulk, 
@@ -19,13 +20,58 @@ const {
     deleteStudent,
     updateTeacher,
     deleteTeacher,
-    addPlacement
+    addPlacement,
+    getAllNotices
 } = require('../controllers/adminController');
 
 const router = express.Router();
 
 // router.post('/signup', adminSignup); 
 router.post('/login', adminLogin);
+router.get('/verify-token', async (req, res) => {
+    try {
+      // Get token from authorization header
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'No token provided' });
+      }
+  
+      const token = authHeader.split(' ')[1];
+      
+      // Verify token
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      
+      // Check if it's an admin token
+      if (decoded.role !== 'Admin' && decoded.role !== 'admin') {
+        return res.status(403).json({ error: 'Invalid token type' });
+      }
+  
+      // Get admin data from database
+      const admin = await Admin.findById(decoded.id).select('-password');
+      
+      if (!admin) {
+        return res.status(404).json({ error: 'Admin not found' });
+      }
+  
+      // Return admin data
+      res.json({
+        id: admin._id,
+        name: admin.name,
+        email: admin.email
+      });
+      
+    } catch (error) {
+      if (error.name === 'JsonWebTokenError') {
+        return res.status(401).json({ error: 'Invalid token' });
+      }
+      if (error.name === 'TokenExpiredError') {
+        return res.status(401).json({ error: 'Token expired' });
+      }
+      
+      console.error('Error verifying admin token:', error);
+      res.status(500).json({ error: 'Server error', details: error.message });
+    }
+  });
 
 /**
  * 📌 Student Management
@@ -55,6 +101,7 @@ router.get('/placements', authenticateUser, authorizeAdmin, getAllPlacements);
 /**
  * 📌 Notice Management (Calendar Notices)
  */
+router.get('/notices', authenticateUser, authorizeAdmin, getAllNotices)
 router.post('/add/notices', authenticateUser, authorizeAdmin, createNotice);
 router.delete('/notices/:id', authenticateUser, authorizeAdmin, deleteNotice);
 

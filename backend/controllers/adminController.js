@@ -439,7 +439,9 @@ exports.getAllPlacements = async (req, res) => {
  */
 exports.createNotice = async (req, res) => {
     try {
+        console.log(req.body);
         const notice = new Notice(req.body);
+    
         await notice.save();
         res.json({ success: true, message: "Notice created successfully!", notice });
     } catch (error) {
@@ -456,5 +458,17 @@ exports.deleteNotice = async (req, res) => {
         res.json({ success: true, message: "Notice deleted successfully!" });
     } catch (error) {
         res.status(500).json({ success: false, message: "Failed to delete notice", error: error.message });
+    }
+};
+
+/**
+ * 📌 Get All Notices
+ */
+exports.getAllNotices = async (req, res) => {
+    try {
+        const notices = await Notice.find();
+        res.json({ success: true, notices });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Failed to fetch notices", error: error.message });
     }
 };
