@@ -22,8 +22,6 @@ const {
     deleteTeacher,
     addPlacement,
     getAllNotices,
-    addPlacement,
-    getAllNotices,
     getPlacementApplicants,
     updateApplicantStatus,
     getStudentById
