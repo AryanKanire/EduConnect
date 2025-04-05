@@ -120,6 +120,18 @@ exports.downloadNotes = async (req, res) => {
     }
 };
 
+/**
+ * 📌 Get All Notes (For Students)
+ */
+exports.getNotes = async (req, res) => {
+    try {
+        const notes = await Note.find();
+        res.status(200).json(notes);
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch notes", details: error.message });
+    }
+};
+
 exports.getAssignments = async (req, res) => {
     try {
         const assignments = await Assignment.find();

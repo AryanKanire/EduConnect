@@ -1,5 +1,7 @@
 const express = require('express');
 const { authenticateUser, authorizeStudent } = require('../middlewares/authMiddleware');
+const jwt = require('jsonwebtoken');
+const Student = require('../models/Student');
 
 const {
     downloadNotes,
@@ -12,6 +14,7 @@ const {
     getStudentProfile,
     loginStudent,
     getAssignments,
+    getNotes, // Import the new function
     getStudentSubmissions,
     getAllTeachers,
     registerStudent
@@ -25,10 +28,65 @@ const router = express.Router();
 router.post('/register', registerStudent);
 router.post('/login', loginStudent);
 
+router.get('/verify-token', async (req, res) => {
+    try {
+      // Get token from authorization header
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'No token provided' });
+      }
+  
+      const token = authHeader.split(' ')[1];
+      
+      // Verify token
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      
+      // Check if it's a student token
+      if (decoded.role !== 'Student' && decoded.role !== 'student') {
+        return res.status(403).json({ error: 'Invalid token type' });
+      }
+  
+      // Get student data from database
+      const student = await Student.findById(decoded.id).select('-password');
+      
+      if (!student) {
+        return res.status(404).json({ error: 'Student not found' });
+      }
+  
+      // Return student data
+      res.json({
+        id: student._id,
+        name: student.name,
+        email: student.email,
+        rollNumber: student.rollNumber,
+        registerNumber: student.registerNumber,
+        semester: student.semester,
+        branch: student.branch,
+        CGPA: student.CGPA,
+        phone: student.phone,
+        currentSubjects: student.currentSubjects
+      });
+      
+    } catch (error) {
+      if (error.name === 'JsonWebTokenError') {
+        return res.status(401).json({ error: 'Invalid token' });
+      }
+      if (error.name === 'TokenExpiredError') {
+        return res.status(401).json({ error: 'Token expired' });
+      }
+      
+      console.error('Error verifying student token:', error);
+      res.status(500).json({ error: 'Server error', details: error.message });
+    }
+  });
+  
+
+
 /**
- * 📌 Notes Section (Download Notes)
+ * 📌 Notes Section (Download Notes & Get All Notes)
  */
 router.get('/notes/:id', authenticateUser, authorizeStudent, downloadNotes);
+router.get('/notes', authenticateUser, authorizeStudent, getNotes); // ✅ New route to get all notes
 
 /**
  * 📌 Assignment Section (Submit Assignments)
