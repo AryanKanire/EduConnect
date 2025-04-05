@@ -8,6 +8,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const StudentAssignment = require('../models/StudentAssignment'); 
 // const Attendance = require('../models/Attendance');
+const Teacher = require('../models/Teacher');
 
 exports.loginStudent = async (req, res) => {
     try {
@@ -34,6 +35,72 @@ exports.loginStudent = async (req, res) => {
 
     } catch (error) {
         res.status(500).json({ error: "Failed to log in", details: error.message });
+    }
+};
+
+/**
+ * 📌 Student Registration
+ */
+exports.registerStudent = async (req, res) => {
+    try {
+        const { rollNumber, registerNumber, name, semester, branch, CGPA, email, phone, currentSubjects, password } = req.body;
+        
+        // Check if student with this rollNumber, registerNumber or email already exists
+        const existingStudent = await Student.findOne({
+            $or: [
+                { rollNumber },
+                { registerNumber },
+                { email }
+            ]
+        });
+        
+        if (existingStudent) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Student with this roll number, register number, or email already exists" 
+            });
+        }
+        
+        // Create new student
+        const student = new Student({
+            rollNumber,
+            registerNumber,
+            name,
+            semester,
+            branch,
+            CGPA,
+            email,
+            phone,
+            currentSubjects: currentSubjects || [],
+            password // Password will be hashed before saving
+        });
+        
+        // Hash password manually if no pre-save middleware exists in the model
+        if (!student.schema.pre) {
+            const salt = await bcrypt.genSalt(10);
+            student.password = await bcrypt.hash(password, salt);
+        }
+        
+        await student.save();
+        
+        res.status(201).json({
+            success: true,
+            message: "Student registered successfully",
+            student: {
+                id: student._id,
+                name: student.name,
+                rollNumber: student.rollNumber,
+                email: student.email
+            }
+        });
+        
+    } catch (error) {
+        console.error("Error in registerStudent:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Server error", 
+            error: error.message 
+        });
     }
 };
 
@@ -96,6 +163,20 @@ exports.submitAssignment = async (req, res) => {
     }
 };
 
+exports.getStudentSubmissions = async (req, res) => {
+    try {
+      const studentId = req.user.id; // Extract student ID from JWT token
+      
+      // Find all submissions for this student
+      const submissions = await StudentAssignment.find({ studentId });
+      
+      res.status(200).json(submissions);
+    } catch (error) {
+      res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+  };
+  
+
 /**
  * 📌 Apply for Placement
  */
@@ -118,8 +199,12 @@ exports.applyForPlacement = async (req, res) => {
         const student = await Student.findById(req.user.id);
         const placement = await Placement.findById(id);
 
-        if (!placement || !student) {
-            return res.status(404).json({ error: "Invalid placement or student" });
+        if (!placement) {
+            return res.status(404).json({ error: "Placement not found" });
+        }
+        
+        if (!student) {
+            return res.status(404).json({ error: "Student not found" });
         }
 
         // Check if student meets criteria
@@ -127,14 +212,23 @@ exports.applyForPlacement = async (req, res) => {
             return res.status(403).json({ error: "You do not meet the eligibility criteria" });
         }
 
-        placement.applicants.push(student._id);
-        await placement.save();
+        // Use Mongoose's update method instead of modifying and saving
+        const result = await Placement.findByIdAndUpdate(
+            id,
+            { $addToSet: { applicants: student._id } },
+            { new: true }
+        );
+        
+        if (!result) {
+            return res.status(500).json({ error: "Failed to update placement" });
+        }
+        
         res.json({ message: "Applied successfully!" });
     } catch (error) {
-        res.status(500).json({ error: "Failed to apply for placement" });
+        console.error("Error in applyForPlacement:", error);
+        res.status(500).json({ error: error.message });
     }
 };
-
 /**
  * 📌 Get Chat Messages (Between Student & Teacher)
  */
@@ -223,6 +317,35 @@ exports.getStudentProfile = async (req, res) => {
         res.json(student);
     } catch (error) {
         res.status(500).json({ error: "Failed to fetch profile" });
+    }
+};
+
+/**
+ * 📌 Get All Teachers
+ */
+exports.getAllTeachers = async (req, res) => {
+    try {
+        const teachers = await Teacher.find().select('-password');
+        
+        if (!teachers || teachers.length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'No teachers found' 
+            });
+        }
+        
+        res.status(200).json({ 
+            success: true, 
+            count: teachers.length,
+            teachers 
+        });
+    } catch (error) {
+        console.error("Error in getAllTeachers:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Server Error', 
+            error: error.message 
+        });
     }
 };
 

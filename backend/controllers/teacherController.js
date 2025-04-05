@@ -8,6 +8,55 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const StudentAssignment = require('../models/StudentAssignment');
 
+/**
+ * 📌 Teacher Registration
+ */
+exports.registerTeacher = async (req, res) => {
+    try {
+        const { name, department, specialization, experience, email, phone, password } = req.body;
+        
+        // Check if teacher with this email already exists
+        const existingTeacher = await Teacher.findOne({ email });
+        if (existingTeacher) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Teacher with this email already exists" 
+            });
+        }
+        
+        // Create new teacher
+        const teacher = new Teacher({
+            name,
+            department,
+            specialization,
+            experience,
+            email,
+            phone,
+            password // Password will be hashed by pre-save middleware if defined in model
+        });
+        
+        await teacher.save();
+        
+        res.status(201).json({
+            success: true,
+            message: "Teacher registered successfully",
+            teacher: {
+                id: teacher._id,
+                name: teacher.name,
+                email: teacher.email,
+                department: teacher.department
+            }
+        });
+        
+    } catch (error) {
+        console.error("Error in registerTeacher:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Server error", 
+            error: error.message 
+        });
+    }
+};
 
 /**
  * 📌 Teacher Login
@@ -173,7 +222,11 @@ exports.uploadAssignment = async (req, res) => {
  */
 exports.getAssignments = async (req, res) => {
     try {
-        const assignments = await Assignment.find({ teacher: req.user.id });
+        const assignments = await Assignment.find({ uploadedBy: req.user.id });
+        if (!assignments || assignments.length === 0) {
+            return res.status(404).json({ message: 'No assignments found' });
+        }
+        // console.log("Assignments retrieved:", assignments);
         res.status(200).json(assignments);
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error });
@@ -283,9 +336,6 @@ exports.sendMessage = async (req, res) => {
     }
 };
 
-
-
-
 /**
  * 📌 Get Teacher Profile (Read-Only)
  */
@@ -298,5 +348,34 @@ exports.getTeacherProfile = async (req, res) => {
         res.status(200).json(teacher);
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error });
+    }
+};
+
+/**
+ * 📌 Get All Students
+ */
+exports.getAllStudents = async (req, res) => {
+    try {
+        const students = await Student.find().select('-password');
+        
+        if (!students || students.length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'No students found' 
+            });
+        }
+        
+        res.status(200).json({ 
+            success: true, 
+            count: students.length,
+            students 
+        });
+    } catch (error) {
+        console.error("Error in getAllStudents:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Server Error', 
+            error: error.message 
+        });
     }
 };

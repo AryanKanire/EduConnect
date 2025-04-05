@@ -1,6 +1,6 @@
 const express = require('express');
 const { authenticateUser, authorizeTeacher } = require('../middlewares/authMiddleware');
-const { cloudinaryUpload, debugFileUpload } = require('../middlewares/uploadMiddleware'); // Corrected file upload middleware
+const { cloudinaryUpload, debugFileUpload } = require('../middlewares/uploadMiddleware');
 
 const {
     uploadNotes,
@@ -12,11 +12,15 @@ const {
     getTeacherProfile,
     teacherLogin,
     viewSubmissions,
-    updateSubmissionStatus
+    updateSubmissionStatus,
+    getAllStudents,
+    registerTeacher
 } = require('../controllers/teacherController');
 
 const router = express.Router();
 
+// Authentication routes
+router.post('/register', registerTeacher);
 router.post('/login', teacherLogin);
 
 /**
@@ -43,5 +47,10 @@ router.post('/chat/:studentId', authenticateUser, authorizeTeacher, sendMessage)
  * 📌 Teacher Profile (View Profile - Cannot Edit)
  */
 router.get('/profile', authenticateUser, authorizeTeacher, getTeacherProfile);
+
+/**
+ * 📌 Student Management
+ */
+router.get('/students', authenticateUser, authorizeTeacher, getAllStudents);
 
 module.exports = router;

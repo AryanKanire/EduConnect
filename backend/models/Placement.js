@@ -21,7 +21,7 @@ const PlacementSchema = new mongoose.Schema({
         type: String, // Google Form link for application
         required: true
     },
-    appliedStudents: [
+    applicants: [
         {
             studentId: {
                 type: mongoose.Schema.Types.ObjectId,

@@ -8,32 +8,57 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
 /**
- * 📌 Admin Signup (One-time use)
+ * 📌 Admin Registration (with optional security check)
  */
-// exports.adminSignup = async (req, res) => {
-//     try {
-//         const { name, email, password } = req.body;
+exports.adminSignup = async (req, res) => {
+    try {
+        const { name, email, password, secretKey } = req.body;
 
-//         // Check if an admin already exists
-//         const existingAdmin = await Admin.findOne();
-//         if (existingAdmin) {
-//             return res.status(403).json({ success: false, message: "Admin account already exists!" });
-//         }
+        // Optional: Add a secret key check to restrict admin creation
+        if (secretKey !== process.env.ADMIN_SECRET_KEY) {
+            return res.status(403).json({ 
+                success: false, 
+                message: "Unauthorized: Invalid secret key"
+            });
+        }
 
-//         // Hash the password before saving
-//         const hashedPassword = await bcrypt.hash(password, 10);
+        // Check if an admin with this email already exists
+        const existingAdmin = await Admin.findOne({ email });
+        if (existingAdmin) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Admin with this email already exists"
+            });
+        }
 
-//         // Create new admin
-//         const admin = new Admin({ name, email, password: hashedPassword });
-//         await admin.save();
+        // Create new admin (password will be hashed by pre-save middleware)
+        const admin = new Admin({ 
+            name, 
+            email, 
+            password 
+        });
+        
+        await admin.save();
 
-//         res.status(201).json({ success: true, message: "Admin account created successfully!" });
+        res.status(201).json({ 
+            success: true, 
+            message: "Admin account created successfully",
+            admin: {
+                id: admin._id,
+                name: admin.name,
+                email: admin.email
+            }
+        });
 
-//     } catch (error) {
-//         console.error("Error in adminSignup:", error);
-//         res.status(500).json({ success: false, message: "Server error" });
-//     }
-// };
+    } catch (error) {
+        console.error("Error in adminSignup:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Server error", 
+            error: error.message 
+        });
+    }
+};
 
 /**
  * 📌 Admin Login
@@ -139,6 +164,7 @@ exports.addStudentBulk = async (req, res) => {
         // Parse students from Excel file
         console.log("Parsing Excel file...");
         const students = await parseExcelFile(req.file.buffer);
+        console.log("Parsed students:", students);
         
         if (!students || students.length === 0) {
             console.log("No student data found in Excel file");
@@ -155,7 +181,7 @@ exports.addStudentBulk = async (req, res) => {
         const validationErrors = [];
         students.forEach((student, index) => {
             // console.log(student);
-            if (!student.rollNumber || !student.registerNumber || !student.name || !student.password) {
+            if (!student.rollNumber  || !student.name || !student.password) {
                 validationErrors.push(`Row ${index + 2}: Missing required fields (rollNumber, name, or password)`);
             }
         });
@@ -260,6 +286,46 @@ exports.deleteStudent = async (req, res) => {
     } catch (error) {
         console.error("Error in deleteStudent:", error);
         res.status(500).json({ success: false, message: "Failed to delete student", error: error.message });
+    }
+};
+
+/**
+ * 📌 Get Student By ID
+ */
+exports.getStudentById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        // Validate if the ID is a valid MongoDB ObjectId
+        if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid student ID format"
+            });
+        }
+        
+        // Find the student by ID
+        const student = await Student.findById(id).select('-password');
+        
+        if (!student) {
+            return res.status(404).json({
+                success: false,
+                message: "Student not found"
+            });
+        }
+        
+        res.status(200).json({
+            success: true,
+            student
+        });
+        
+    } catch (error) {
+        console.error("Error in getStudentById:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch student",
+            error: error.message
+        });
     }
 };
 
@@ -434,17 +500,119 @@ exports.getAllPlacements = async (req, res) => {
     }
 };
 
+/**
+ * 📌 Get Placement Applicants
+ */
+exports.getPlacementApplicants = async (req, res) => {
+    try {
+        const { id } = req.params; // Get placement ID
+        
+        // Find placement and populate the applicants field
+        const placement = await Placement.findById(id).populate({
+            path: 'applicants',
+            select: 'name rollNumber registerNumber email CGPA branch semester', // Don't include password
+            model: 'Student'
+        });
+        
+        if (!placement) {
+            return res.status(404).json({
+                success: false,
+                message: "Placement not found"
+            });
+        }
+        
+        // Return the list of applicants
+        res.json({
+            success: true,
+            placementId: placement._id,
+            companyName: placement.companyName,
+            applicantsCount: placement.applicants.length,
+            applicants: placement.applicants
+        });
+        
+    } catch (error) {
+        console.error("Error in getPlacementApplicants:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch placement applicants",
+            error: error.message
+        });
+    }
+};
 
 /**
- * 📌 Get All Notices
+ * 📌 Update Applicant Status
  */
-exports.getAllNotices = async (req, res) => {
+exports.updateApplicantStatus = async (req, res) => {
     try {
-        const notices = await Notice.find();
-        res.json({ success: true, notices });
+        const { placementId, applicantId } = req.params;
+        const { status } = req.body;
+        
+        // Validate status value
+        const validStatuses = ['Applied', 'Selected', 'Rejected'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid status value. Must be 'Applied', 'Selected', or 'Rejected'"
+            });
+        }
+        
+        // Find the placement
+        const placement = await Placement.findById(placementId);
+        if (!placement) {
+            return res.status(404).json({
+                success: false, 
+                message: "Placement not found"
+            });
+        }
+        
+        // Check if applicant exists
+        const applicantExists = placement.applicants.includes(applicantId);
+        if (!applicantExists) {
+            return res.status(404).json({
+                success: false,
+                message: "Applicant not found for this placement"
+            });
+        }
+        
+        // Check if we have an applicant status array
+        if (!placement.applicantStatuses) {
+            placement.applicantStatuses = [];
+        }
+        
+        // Update or add the status
+        const existingStatusIndex = placement.applicantStatuses.findIndex(
+            item => item.applicantId.toString() === applicantId
+        );
+        
+        if (existingStatusIndex >= 0) {
+            // Update existing status
+            placement.applicantStatuses[existingStatusIndex].status = status;
+        } else {
+            // Add new status
+            placement.applicantStatuses.push({
+                applicantId,
+                status
+            });
+        }
+        
+        await placement.save();
+        
+        res.json({
+            success: true,
+            message: "Applicant status updated successfully",
+            placementId,
+            applicantId,
+            status
+        });
+        
     } catch (error) {
-        console.error("Error in getAllNotices:", error);
-        res.status(500).json({ success: false, message: "Failed to fetch notices", error: error.message });
+        console.error("Error in updateApplicantStatus:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to update applicant status",
+            error: error.message
+        });
     }
 };
 
@@ -453,7 +621,9 @@ exports.getAllNotices = async (req, res) => {
  */
 exports.createNotice = async (req, res) => {
     try {
+        console.log(req.body);
         const notice = new Notice(req.body);
+    
         await notice.save();
         res.json({ success: true, message: "Notice created successfully!", notice });
     } catch (error) {
@@ -470,5 +640,17 @@ exports.deleteNotice = async (req, res) => {
         res.json({ success: true, message: "Notice deleted successfully!" });
     } catch (error) {
         res.status(500).json({ success: false, message: "Failed to delete notice", error: error.message });
+    }
+};
+
+/**
+ * 📌 Get All Notices
+ */
+exports.getAllNotices = async (req, res) => {
+    try {
+        const notices = await Notice.find();
+        res.json({ success: true, notices });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Failed to fetch notices", error: error.message });
     }
 };

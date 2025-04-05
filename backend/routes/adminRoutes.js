@@ -20,12 +20,16 @@ const {
     updateTeacher,
     deleteTeacher,
     addPlacement,
-    getAllNotices
+    getAllNotices,
+    getPlacementApplicants,
+    updateApplicantStatus,
+    getStudentById
 } = require('../controllers/adminController');
 
 const router = express.Router();
 
-// router.post('/signup', adminSignup); 
+// Authentication routes
+router.post('/register', adminSignup); 
 router.post('/login', adminLogin);
 
 /**
@@ -36,6 +40,7 @@ router.post('/add/studentsbulk', authenticateUser, authorizeAdmin, debugExcelUpl
 router.put('/students/update/:id', authenticateUser, authorizeAdmin, updateStudent); 
 router.delete('/students/delete/:id', authenticateUser, authorizeAdmin, deleteStudent); 
 router.get('/students', authenticateUser, authorizeAdmin, getAllStudents);
+router.get('/students/:id', authenticateUser, authorizeAdmin, getStudentById);
 
 /**
  * 📌 Teacher Management
@@ -52,6 +57,8 @@ router.post('/add/placement', authenticateUser, authorizeAdmin, addPlacement);
 router.put('/update/placements/:id', authenticateUser, authorizeAdmin, updatePlacement);
 router.delete('/delete/placements/:id', authenticateUser, authorizeAdmin, deletePlacement);
 router.get('/placements', authenticateUser, authorizeAdmin, getAllPlacements);
+router.get('/placements/:id/applicants', authenticateUser, authorizeAdmin, getPlacementApplicants);
+router.put('/placements/:placementId/applicants/:applicantId', authenticateUser, authorizeAdmin, updateApplicantStatus);
 
 /**
  * 📌 Notice Management (Calendar Notices)

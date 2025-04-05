@@ -5,19 +5,24 @@ const {
     downloadNotes,
     submitAssignment,
     applyForPlacement,
-    getAllPlacements,  // New function to fetch all placements
+    getAllPlacements,
     getChatMessages,
     sendMessage,
     getNotices,
     getStudentProfile,
     loginStudent,
     getAssignments,
+    getStudentSubmissions,
+    getAllTeachers,
+    registerStudent
     // getAttendance
 } = require('../controllers/studentController');
 const { cloudinaryUpload } = require('../middlewares/uploadMiddleware');
 
 const router = express.Router();
 
+// Authentication routes
+router.post('/register', registerStudent);
 router.post('/login', loginStudent);
 
 /**
@@ -30,6 +35,7 @@ router.get('/notes/:id', authenticateUser, authorizeStudent, downloadNotes);
  */
 router.get('/assignments/get',authenticateUser, authorizeStudent, getAssignments);
 router.post('/submit-assignment/:assignmentId', authenticateUser, authorizeStudent,cloudinaryUpload.single('file'), submitAssignment);
+router.get('/assignments/submissions', authenticateUser, authorizeStudent, getStudentSubmissions);
 
 /**
  * 📌 Placement Section (Apply for Placement & View Placements)
@@ -52,6 +58,11 @@ router.get('/notices', authenticateUser, authorizeStudent, getNotices);
  * 📌 Student Profile (View Profile - Cannot Edit)
  */
 router.get('/profile', authenticateUser, authorizeStudent, getStudentProfile);
+
+/**
+ * 📌 Teacher Management
+ */
+router.get('/teachers', authenticateUser, authorizeStudent, getAllTeachers);
 
 /**
  * 📌 Attendance (View Only)
